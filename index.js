@@ -6,6 +6,7 @@ import verifyToken from "./src/middleware/verifyToken.js";
 import userRoutes from "./src/routes/userRoutes.js";
 import tuitionRoutes from "./src/routes/tuitionRoutes.js";
 import applicationRoutes from "./src/routes/applicationRoutes.js";
+import createIndexes from "./src/config/indexes.js";
 
 dotenv.config();
 
@@ -38,6 +39,7 @@ app.get("/api/auth-check", verifyToken, (req, res) => {
 const startServer = async () => {
   try {
     await connectDB();
+    await createIndexes();
 
     app.use("/api/users", userRoutes);
     app.use("/api/tuitions", tuitionRoutes);

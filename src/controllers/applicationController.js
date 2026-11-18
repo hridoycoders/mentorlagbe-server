@@ -36,6 +36,19 @@ const createApplication = async (req, res) => {
       });
     }
 
+    // Prevent duplicate applications
+    const existingApplication = await db.collection("applications").findOne({
+      tuitionId: new ObjectId(tuitionId),
+      studentId: new ObjectId(req.user.id),
+    });
+
+    if (existingApplication) {
+      return res.status(409).json({
+        success: false,
+        message: "You have already applied to this tuition.",
+      });
+    }
+
     const now = new Date();
 
     const newApplication = {
@@ -70,6 +83,14 @@ const createApplication = async (req, res) => {
     });
   } catch (error) {
     console.error("Create Application Error:", error);
+
+    // Handle MongoDB duplicate key error
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "You have already applied to this tuition.",
+      });
+    }
 
     return res.status(500).json({
       success: false,
