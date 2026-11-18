@@ -5,6 +5,8 @@ import {
   getPublicTuitions,
   searchPublicTuitions,
   getPublicTuitionById,
+  updateTutorTuition,
+  deleteTutorTuition,
 } from "../controllers/tuitionController.js";
 
 import verifyToken from "../middleware/verifyToken.js";
@@ -20,6 +22,12 @@ router.get("/", getPublicTuitions);
 
 // Create a new tuition (Tutor only)
 router.post("/", verifyToken, authorizeRole("tutor"), createTuition);
+
+// Update tutor's own tuition
+router.patch("/:id", verifyToken, authorizeRole("tutor"), updateTutorTuition);
+
+// Delete tutor's own tuition
+router.delete("/:id", verifyToken, authorizeRole("tutor"), deleteTutorTuition);
 
 // Get single tuition details
 router.get("/:id", getPublicTuitionById);

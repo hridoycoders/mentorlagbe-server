@@ -246,9 +246,203 @@ const getPublicTuitionById = async (req, res) => {
   }
 };
 
+// Update tutor's own tuition
+const updateTutorTuition = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid tuition ID.",
+      });
+    }
+
+    const {
+      title,
+      subject,
+      classLevel,
+      mode,
+      location,
+      monthlyFee,
+      daysPerWeek,
+      description,
+      bannerImage,
+    } = req.body;
+
+    const db = getDB();
+
+    const tuition = await db.collection("tuitions").findOne({
+      _id: new ObjectId(id),
+      tutorId: new ObjectId(req.user.id),
+    });
+
+    if (!tuition) {
+      return res.status(404).json({
+        success: false,
+        message: "Tuition not found or you do not own this tuition.",
+      });
+    }
+
+    // Validate monthly fee if provided
+    let updatedMonthlyFee = tuition.monthlyFee;
+
+    if (monthlyFee !== undefined) {
+      const min = Number(monthlyFee.min);
+      const max = Number(monthlyFee.max);
+
+      if (
+        !Number.isFinite(min) ||
+        !Number.isFinite(max) ||
+        min <= 0 ||
+        max < min
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Please provide a valid monthly fee range.",
+        });
+      }
+
+      updatedMonthlyFee = {
+        min,
+        max,
+        currency: "BDT",
+        period: "monthly",
+      };
+    }
+
+    // Validate days per week if provided
+    let updatedDays = tuition.daysPerWeek;
+
+    if (daysPerWeek !== undefined) {
+      const days = Number(daysPerWeek);
+
+      if (!Number.isInteger(days) || days < 1 || days > 7) {
+        return res.status(400).json({
+          success: false,
+          message: "Days per week must be between 1 and 7.",
+        });
+      }
+
+      updatedDays = days;
+    }
+
+    const updates = {
+      updatedAt: new Date(),
+    };
+
+    const fields = {
+      title,
+      subject,
+      classLevel,
+      mode,
+      location,
+      description,
+      bannerImage,
+    };
+
+    for (const [key, value] of Object.entries(fields)) {
+      if (value !== undefined) {
+        if (typeof value !== "string" || !value.trim()) {
+          return res.status(400).json({
+            success: false,
+            message: `${key} must be a non-empty string.`,
+          });
+        }
+
+        updates[key] = value.trim();
+      }
+    }
+
+    if (monthlyFee !== undefined) {
+      updates.monthlyFee = updatedMonthlyFee;
+    }
+
+    if (daysPerWeek !== undefined) {
+      updates.daysPerWeek = updatedDays;
+    }
+
+    const result = await db.collection("tuitions").updateOne(
+      {
+        _id: new ObjectId(id),
+        tutorId: new ObjectId(req.user.id),
+      },
+      {
+        $set: updates,
+      }
+    );
+
+    if (!result.matchedCount) {
+      return res.status(404).json({
+        success: false,
+        message: "Tuition not found.",
+      });
+    }
+
+    const updatedTuition = await db.collection("tuitions").findOne({
+      _id: new ObjectId(id),
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Tuition updated successfully.",
+      data: updatedTuition,
+    });
+  } catch (error) {
+    console.error("Update Tuition Error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update tuition.",
+    });
+  }
+};
+
+// Delete tutor's own tuition
+const deleteTutorTuition = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid tuition ID.",
+      });
+    }
+
+    const db = getDB();
+
+    const result = await db.collection("tuitions").deleteOne({
+      _id: new ObjectId(id),
+      tutorId: new ObjectId(req.user.id),
+    });
+
+    if (!result.deletedCount) {
+      return res.status(404).json({
+        success: false,
+        message: "Tuition not found or you do not own this tuition.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Tuition deleted successfully.",
+    });
+  } catch (error) {
+    console.error("Delete Tuition Error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete tuition.",
+    });
+  }
+};
+
 export {
   createTuition,
   getPublicTuitions,
   searchPublicTuitions,
   getPublicTuitionById,
+  updateTutorTuition,
+  deleteTutorTuition,
 };
