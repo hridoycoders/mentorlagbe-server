@@ -99,4 +99,142 @@ const createApplication = async (req, res) => {
   }
 };
 
-export { createApplication };
+
+const getTutorApplications = async (req, res) => {
+  try {
+    const db = getDB();
+
+    const applications = await db
+      .collection("applications")
+      .find({
+        tutorId: new ObjectId(req.user.id),
+      })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    return res.status(200).json({
+      success: true,
+      message: "Tutor applications retrieved successfully.",
+      total: applications.length,
+      data: applications,
+    });
+  } catch (error) {
+    console.error("Get Tutor Applications Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to retrieve applications.",
+    });
+  }
+};
+
+
+const getTutorApplicationById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid application ID.",
+      });
+    }
+
+    const db = getDB();
+
+    const application = await db.collection("applications").findOne({
+      _id: new ObjectId(id),
+      tutorId: new ObjectId(req.user.id),
+    });
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: "Application not found.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Application details retrieved successfully.",
+      data: application,
+    });
+  } catch (error) {
+    console.error("Get Tutor Application Details Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to retrieve application details.",
+    });
+  }
+};
+
+
+const updateApplicationStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid application ID.",
+      });
+    }
+
+    if (!["accepted", "rejected"].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Status must be accepted or rejected.",
+      });
+    }
+
+    const db = getDB();
+
+    const result = await db.collection("applications").updateOne(
+      {
+        _id: new ObjectId(id),
+        tutorId: new ObjectId(req.user.id),
+        status: "pending",
+      },
+      {
+        $set: {
+          status,
+          updatedAt: new Date(),
+        },
+      },
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Pending application not found or you do not have permission.",
+      });
+    }
+
+    const updatedApplication = await db.collection("applications").findOne({
+      _id: new ObjectId(id),
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Application ${status} successfully.`,
+      data: updatedApplication,
+    });
+  } catch (error) {
+    console.error("Update Application Status Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update application status.",
+    });
+  }
+};
+
+
+export {
+  createApplication,
+  getTutorApplications,
+  updateApplicationStatus,
+  getTutorApplicationById,
+};
