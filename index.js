@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { connectDB } from "./src/config/db.js";
+import verifyToken from "./src/middleware/verifyToken.js";
 
 dotenv.config();
 
@@ -17,8 +18,18 @@ app.use(
 
 app.use(express.json());
 
+// Home Route
 app.get("/", (req, res) => {
   res.send("MentorLagbe Server is Running!");
+});
+
+// Protected Test Route
+app.get("/api/auth-check", verifyToken, (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Authentication successful!",
+    user: req.user,
+  });
 });
 
 const startServer = async () => {
