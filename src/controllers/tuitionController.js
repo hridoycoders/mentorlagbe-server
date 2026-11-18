@@ -469,6 +469,88 @@ const deleteTutorTuition = async (req, res) => {
   }
 };
 
+// Admin: Get all tuitions
+const getAllTuitions = async (req, res) => {
+  try {
+    const db = getDB();
+
+    const tuitions = await db
+      .collection("tuitions")
+      .find({})
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    return res.status(200).json({
+      success: true,
+      message: "All tuitions retrieved successfully.",
+      total: tuitions.length,
+      data: tuitions,
+    });
+  } catch (error) {
+    console.error("Get All Tuitions Error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to retrieve all tuitions.",
+    });
+  }
+};
+
+// Admin: Approve or reject a tuition
+const updateTuitionStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid tuition ID.",
+      });
+    }
+
+    if (!["approved", "rejected"].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Status must be approved or rejected.",
+      });
+    }
+
+    const db = getDB();
+
+    const result = await db.collection("tuitions").updateOne(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          status,
+          updatedAt: new Date(),
+        },
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Tuition not found.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Tuition ${status} successfully.`,
+    });
+  } catch (error) {
+    console.error("Update Tuition Status Error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update tuition status.",
+    });
+  }
+};
+
+
+
 export {
   createTuition,
   getPublicTuitions,
@@ -476,4 +558,6 @@ export {
   getPublicTuitionById,
   updateTutorTuition,
   deleteTutorTuition,
+  getAllTuitions,
+  updateTuitionStatus,
 };

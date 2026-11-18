@@ -7,6 +7,8 @@ import {
   getPublicTuitionById,
   updateTutorTuition,
   deleteTutorTuition,
+  getAllTuitions,
+  updateTuitionStatus,
 } from "../controllers/tuitionController.js";
 
 import verifyToken from "../middleware/verifyToken.js";
@@ -16,6 +18,12 @@ const router = express.Router();
 
 // Search and filter public tuitions
 router.get("/search", searchPublicTuitions);
+
+// Admin: Get all tuitions
+router.get("/admin/all", verifyToken, authorizeRole("admin"), getAllTuitions);
+
+// Admin: Approve or reject a tuition
+router.patch("/admin/:id/status", verifyToken, authorizeRole("admin"), updateTuitionStatus);
 
 // Get all approved and active public tuitions
 router.get("/", getPublicTuitions);
