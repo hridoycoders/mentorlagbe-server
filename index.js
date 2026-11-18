@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { connectDB } from "./src/config/db.js";
 import verifyToken from "./src/middleware/verifyToken.js";
 import userRoutes from "./src/routes/userRoutes.js";
+import tuitionRoutes from "./src/routes/tuitionRoutes.js";
 
 dotenv.config();
 
@@ -38,6 +39,7 @@ const startServer = async () => {
     await connectDB();
 
     app.use("/api/users", userRoutes);
+    app.use("/api/tuitions", tuitionRoutes);
 
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
