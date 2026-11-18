@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { connectDB } from "./src/config/db.js";
 import verifyToken from "./src/middleware/verifyToken.js";
+import userRoutes from "./src/routes/userRoutes.js";
 
 dotenv.config();
 
@@ -35,6 +36,8 @@ app.get("/api/auth-check", verifyToken, (req, res) => {
 const startServer = async () => {
   try {
     await connectDB();
+
+    app.use("/api/users", userRoutes);
 
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
