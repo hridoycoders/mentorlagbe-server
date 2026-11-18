@@ -1,5 +1,7 @@
+import { ObjectId } from "mongodb";
 import { getDB } from "../config/db.js";
 
+// Get all approved and active public tuitions
 const getPublicTuitions = async (req, res) => {
   try {
     const db = getDB();
@@ -29,6 +31,7 @@ const getPublicTuitions = async (req, res) => {
   }
 };
 
+// Search and filter public tuitions
 const searchPublicTuitions = async (req, res) => {
   try {
     const db = getDB();
@@ -94,4 +97,46 @@ const searchPublicTuitions = async (req, res) => {
   }
 };
 
-export { getPublicTuitions, searchPublicTuitions };
+// Get single approved and active tuition details
+const getPublicTuitionById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid tuition ID.",
+      });
+    }
+
+    const db = getDB();
+
+    const tuition = await db.collection("tuitions").findOne({
+      _id: new ObjectId(id),
+      status: "approved",
+      isActive: true,
+    });
+
+    if (!tuition) {
+      return res.status(404).json({
+        success: false,
+        message: "Tuition not found or not available.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Tuition details retrieved successfully.",
+      data: tuition,
+    });
+  } catch (error) {
+    console.error("Get Tuition Details Error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to retrieve tuition details.",
+    });
+  }
+};
+
+export { getPublicTuitions, searchPublicTuitions, getPublicTuitionById };
