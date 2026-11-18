@@ -59,6 +59,37 @@ const createTuition = async (req, res) => {
 
     const db = getDB();
 
+    // Check tutor posting limit
+    const tutor = await db.collection("users").findOne({
+      _id: new ObjectId(req.user.id),
+    });
+
+    if (!tutor) {
+      return res.status(404).json({
+        success: false,
+        message: "Tutor account not found.",
+      });
+    }
+
+    const tutorPlan = tutor.plan || "free";
+
+    if (tutorPlan !== "pro") {
+      const activeTuitionCount = await db
+        .collection("tuitions")
+        .countDocuments({
+          tutorId: new ObjectId(req.user.id),
+          isActive: true,
+        });
+
+      if (activeTuitionCount >= 2) {
+        return res.status(403).json({
+          success: false,
+          message:
+            "Free plan allows only 2 active tuition posts. Upgrade to Pro for unlimited posts.",
+        });
+      }
+    }
+
     const newTuition = {
       title: title.trim(),
       subject: subject.trim(),
