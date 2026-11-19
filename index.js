@@ -7,6 +7,7 @@ import userRoutes from "./src/routes/userRoutes.js";
 import tuitionRoutes from "./src/routes/tuitionRoutes.js";
 import applicationRoutes from "./src/routes/applicationRoutes.js";
 import createIndexes from "./src/config/indexes.js";
+import paymentRoutes from "./src/routes/paymentRoutes.js";
 
 dotenv.config();
 
@@ -44,6 +45,7 @@ const startServer = async () => {
     app.use("/api/users", userRoutes);
     app.use("/api/tuitions", tuitionRoutes);
     app.use("/api/applications", applicationRoutes);
+    app.use("/api/payments", paymentRoutes);
 
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
