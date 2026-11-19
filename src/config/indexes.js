@@ -14,6 +14,14 @@ const createIndexes = async () => {
     },
   );
 
+  await db.collection("payments").createIndex(
+    { sessionId: 1 },
+    {
+      unique: true,
+      name: "unique_stripe_session",
+    },
+  );
+
   console.log("MongoDB Indexes Created Successfully!");
 };
 
