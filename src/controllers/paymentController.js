@@ -149,6 +149,24 @@ const handleStripeWebhook = async (req, res) => {
       });
 
       if (existingPayment) {
+        // Ensure user plan is upgraded even during webhook retry
+        const userResult = await db.collection("users").updateOne(
+          {
+            _id: new ObjectId(userId),
+            role: userRole,
+          },
+          {
+            $set: {
+              plan: "pro",
+              updatedAt: new Date(),
+            },
+          },
+        );
+
+        if (userResult.matchedCount === 0) {
+          throw new Error("User not found or role mismatch.");
+        }
+
         return res.status(200).json({
           success: true,
           received: true,
