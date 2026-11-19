@@ -1,6 +1,6 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import { connectDB } from "./src/config/db.js";
 import verifyToken from "./src/middleware/verifyToken.js";
 import userRoutes from "./src/routes/userRoutes.js";
@@ -10,7 +10,6 @@ import createIndexes from "./src/config/indexes.js";
 import paymentRoutes from "./src/routes/paymentRoutes.js";
 import dashboardRoutes from "./src/routes/dashboardRoutes.js";
 
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -23,10 +22,7 @@ app.use(
 );
 
 // Stripe Webhook: Preserve raw request body
-app.use(
-  "/api/payments/webhook",
-  express.raw({ type: "application/json" })
-);
+app.use("/api/payments/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
 
 // Home Route
