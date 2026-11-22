@@ -14,7 +14,6 @@ const createApplication = async (req, res) => {
 
     const db = getDB();
 
-    // Find an approved and active tuition
     const tuition = await db.collection("tuitions").findOne({
       _id: new ObjectId(tuitionId),
       status: "approved",
@@ -28,7 +27,6 @@ const createApplication = async (req, res) => {
       });
     }
 
-    // Prevent tutor from applying to their own tuition
     if (tuition.tutorId.toString() === req.user.id) {
       return res.status(403).json({
         success: false,
@@ -36,7 +34,6 @@ const createApplication = async (req, res) => {
       });
     }
 
-    // Prevent duplicate applications
     const existingApplication = await db.collection("applications").findOne({
       tuitionId: new ObjectId(tuitionId),
       studentId: new ObjectId(req.user.id),
@@ -84,7 +81,6 @@ const createApplication = async (req, res) => {
   } catch (error) {
     console.error("Create Application Error:", error);
 
-    // Handle MongoDB duplicate key error
     if (error.code === 11000) {
       return res.status(409).json({
         success: false,
@@ -99,7 +95,36 @@ const createApplication = async (req, res) => {
   }
 };
 
+// Student: Get own applications
+const getStudentApplications = async (req, res) => {
+  try {
+    const db = getDB();
 
+    const applications = await db
+      .collection("applications")
+      .find({
+        studentId: new ObjectId(req.user.id),
+      })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    return res.status(200).json({
+      success: true,
+      message: "Student applications retrieved successfully.",
+      total: applications.length,
+      data: applications,
+    });
+  } catch (error) {
+    console.error("Get Student Applications Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to retrieve student applications.",
+    });
+  }
+};
+
+// Tutor: Get all applications for own tuitions
 const getTutorApplications = async (req, res) => {
   try {
     const db = getDB();
@@ -127,7 +152,6 @@ const getTutorApplications = async (req, res) => {
     });
   }
 };
-
 
 const getTutorApplicationById = async (req, res) => {
   try {
@@ -168,7 +192,6 @@ const getTutorApplicationById = async (req, res) => {
     });
   }
 };
-
 
 const updateApplicationStatus = async (req, res) => {
   try {
@@ -231,9 +254,9 @@ const updateApplicationStatus = async (req, res) => {
   }
 };
 
-
 export {
   createApplication,
+  getStudentApplications,
   getTutorApplications,
   updateApplicationStatus,
   getTutorApplicationById,

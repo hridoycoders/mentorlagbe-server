@@ -2,6 +2,7 @@ import express from "express";
 
 import {
   createApplication,
+  getStudentApplications,
   getTutorApplications,
   getTutorApplicationById,
   updateApplicationStatus,
@@ -11,6 +12,14 @@ import verifyToken from "../middleware/verifyToken.js";
 import authorizeRole from "../middleware/authorizeRole.js";
 
 const router = express.Router();
+
+// Student: Get own applications
+router.get(
+  "/student",
+  verifyToken,
+  authorizeRole("student"),
+  getStudentApplications,
+);
 
 // Tutor: Get all applications for own tuitions
 router.get("/tutor", verifyToken, authorizeRole("tutor"), getTutorApplications);
