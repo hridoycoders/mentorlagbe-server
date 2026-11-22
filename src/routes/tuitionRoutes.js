@@ -2,6 +2,7 @@ import express from "express";
 
 import {
   createTuition,
+  getTutorTuitions,
   getPublicTuitions,
   searchPublicTuitions,
   getPublicTuitionById,
@@ -23,7 +24,16 @@ router.get("/search", searchPublicTuitions);
 router.get("/admin/all", verifyToken, authorizeRole("admin"), getAllTuitions);
 
 // Admin: Approve or reject a tuition
-router.patch("/admin/:id/status", verifyToken, authorizeRole("admin"), updateTuitionStatus);
+router.patch(
+  "/admin/:id/status",
+  verifyToken,
+  authorizeRole("admin"),
+  updateTuitionStatus,
+);
+
+// Tutor: Get all of their own tuitions
+// Keep this route before /:id
+router.get("/my", verifyToken, authorizeRole("tutor"), getTutorTuitions);
 
 // Get all approved and active public tuitions
 router.get("/", getPublicTuitions);

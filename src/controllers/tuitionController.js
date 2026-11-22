@@ -1,6 +1,11 @@
 import { ObjectId } from "mongodb";
 import { getDB } from "../config/db.js";
 
+// Escape special regex characters
+const escapeRegex = (value = "") => {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
 // Create a new tuition (Tutor only)
 const createTuition = async (req, res) => {
   try {
@@ -16,7 +21,6 @@ const createTuition = async (req, res) => {
       bannerImage,
     } = req.body;
 
-    // Validate required fields
     if (
       !title?.trim() ||
       !subject?.trim() ||
@@ -31,7 +35,6 @@ const createTuition = async (req, res) => {
       });
     }
 
-    // Validate monthly fee range
     const minFee = Number(monthlyFee?.min);
     const maxFee = Number(monthlyFee?.max);
 
@@ -47,7 +50,6 @@ const createTuition = async (req, res) => {
       });
     }
 
-    // Validate days per week
     const days = Number(daysPerWeek);
 
     if (!Number.isInteger(days) || days < 1 || days > 7) {
@@ -59,7 +61,6 @@ const createTuition = async (req, res) => {
 
     const db = getDB();
 
-    // Check tutor posting limit
     const tutor = await db.collection("users").findOne({
       _id: new ObjectId(req.user.id),
     });
@@ -139,6 +140,35 @@ const createTuition = async (req, res) => {
   }
 };
 
+// Get all tuitions created by the authenticated tutor
+const getTutorTuitions = async (req, res) => {
+  try {
+    const db = getDB();
+
+    const tuitions = await db
+      .collection("tuitions")
+      .find({
+        tutorId: new ObjectId(req.user.id),
+      })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    return res.status(200).json({
+      success: true,
+      message: "Your tuitions retrieved successfully.",
+      total: tuitions.length,
+      data: tuitions,
+    });
+  } catch (error) {
+    console.error("Get Tutor Tuitions Error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to retrieve your tuitions.",
+    });
+  }
+};
+
 // Get all approved and active public tuitions
 const getPublicTuitions = async (req, res) => {
   try {
@@ -169,45 +199,68 @@ const getPublicTuitions = async (req, res) => {
   }
 };
 
-// Search and filter public tuitions
+// Search and filter public tuitions (Server-side)
 const searchPublicTuitions = async (req, res) => {
   try {
     const db = getDB();
 
-    const { search, subject, location, classLevel } = req.query;
+    const { search, subject, location, classLevel, mode } = req.query;
 
+    // Only approved and active tuitions are publicly visible
     const filter = {
       status: "approved",
       isActive: true,
     };
 
-    if (search?.trim()) {
-      const keyword = search.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    // Search by title, subject, description or tutor name
+    if (typeof search === "string" && search.trim()) {
+      const keyword = escapeRegex(search.trim());
 
       filter.$or = [
         { title: { $regex: keyword, $options: "i" } },
         { subject: { $regex: keyword, $options: "i" } },
         { description: { $regex: keyword, $options: "i" } },
+        { tutorName: { $regex: keyword, $options: "i" } },
       ];
     }
 
-    if (subject?.trim()) {
+    // Subject filter
+    if (typeof subject === "string" && subject.trim()) {
       filter.subject = {
-        $regex: `^${subject.trim()}$`,
+        $regex: `^${escapeRegex(subject.trim())}$`,
         $options: "i",
       };
     }
 
-    if (location?.trim()) {
-      filter.location = {
-        $regex: location.trim(),
-        $options: "i",
-      };
-    }
-
-    if (classLevel?.trim()) {
+    // Class level filter
+    if (typeof classLevel === "string" && classLevel.trim()) {
       filter.classLevel = {
-        $regex: `^${classLevel.trim()}$`,
+        $regex: `^${escapeRegex(classLevel.trim())}$`,
+        $options: "i",
+      };
+    }
+
+    // Online / Offline mode filter
+    if (typeof mode === "string" && mode.trim()) {
+      const normalizedMode = mode.trim().toLowerCase();
+
+      if (!["online", "offline"].includes(normalizedMode)) {
+        return res.status(400).json({
+          success: false,
+          message: "Mode must be online or offline.",
+        });
+      }
+
+      filter.mode = {
+        $regex: `^${escapeRegex(normalizedMode)}$`,
+        $options: "i",
+      };
+    }
+
+    // Location filter
+    if (typeof location === "string" && location.trim()) {
+      filter.location = {
+        $regex: escapeRegex(location.trim()),
         $options: "i",
       };
     }
@@ -222,7 +275,13 @@ const searchPublicTuitions = async (req, res) => {
       success: true,
       message: "Tuition search completed successfully.",
       total: tuitions.length,
-      filters: { search, subject, location, classLevel },
+      filters: {
+        search: search || "",
+        subject: subject || "",
+        location: location || "",
+        classLevel: classLevel || "",
+        mode: mode || "",
+      },
       data: tuitions,
     });
   } catch (error) {
@@ -299,6 +358,7 @@ const updateTutorTuition = async (req, res) => {
       daysPerWeek,
       description,
       bannerImage,
+      isActive,
     } = req.body;
 
     const db = getDB();
@@ -315,7 +375,6 @@ const updateTutorTuition = async (req, res) => {
       });
     }
 
-    // Validate monthly fee if provided
     let updatedMonthlyFee = tuition.monthlyFee;
 
     if (monthlyFee !== undefined) {
@@ -342,7 +401,6 @@ const updateTutorTuition = async (req, res) => {
       };
     }
 
-    // Validate days per week if provided
     let updatedDays = tuition.daysPerWeek;
 
     if (daysPerWeek !== undefined) {
@@ -393,6 +451,18 @@ const updateTutorTuition = async (req, res) => {
       updates.daysPerWeek = updatedDays;
     }
 
+    // Allow tutor to activate or close their own tuition
+    if (isActive !== undefined) {
+      if (typeof isActive !== "boolean") {
+        return res.status(400).json({
+          success: false,
+          message: "isActive must be a boolean value.",
+        });
+      }
+
+      updates.isActive = isActive;
+    }
+
     const result = await db.collection("tuitions").updateOne(
       {
         _id: new ObjectId(id),
@@ -400,7 +470,7 @@ const updateTutorTuition = async (req, res) => {
       },
       {
         $set: updates,
-      }
+      },
     );
 
     if (!result.matchedCount) {
@@ -525,7 +595,7 @@ const updateTuitionStatus = async (req, res) => {
           status,
           updatedAt: new Date(),
         },
-      }
+      },
     );
 
     if (result.matchedCount === 0) {
@@ -549,10 +619,9 @@ const updateTuitionStatus = async (req, res) => {
   }
 };
 
-
-
 export {
   createTuition,
+  getTutorTuitions,
   getPublicTuitions,
   searchPublicTuitions,
   getPublicTuitionById,
