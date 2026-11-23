@@ -313,10 +313,51 @@ const updateApplicationStatus = async (req, res) => {
   }
 };
 
+const deleteApplication = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid application ID.",
+      });
+    }
+
+    const db = getDB();
+
+    const result = await db.collection("applications").deleteOne({
+      _id: new ObjectId(id),
+      studentId: new ObjectId(req.user.id),
+      status: "pending",
+    });
+
+    if (!result.deletedCount) {
+      return res.status(404).json({
+        success: false,
+        message: "Pending application not found or you do not have permission.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Application cancelled successfully.",
+    });
+  } catch (error) {
+    console.error("Delete Application Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to cancel application.",
+    });
+  }
+};
+
 export {
   createApplication,
   getStudentApplications,
   getTutorApplications,
   updateApplicationStatus,
   getTutorApplicationById,
+  deleteApplication,
 };

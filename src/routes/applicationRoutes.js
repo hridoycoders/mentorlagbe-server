@@ -6,6 +6,7 @@ import {
   getTutorApplications,
   getTutorApplicationById,
   updateApplicationStatus,
+  deleteApplication,
 } from "../controllers/applicationController.js";
 
 import verifyToken from "../middleware/verifyToken.js";
@@ -42,5 +43,8 @@ router.patch(
 
 // Student: Apply for a tuition
 router.post("/", verifyToken, authorizeRole("student"), createApplication);
+
+// Student: Cancel a pending application
+router.delete("/:id", verifyToken, authorizeRole("student"), deleteApplication);
 
 export default router;
