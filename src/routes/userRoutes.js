@@ -5,6 +5,7 @@ import authorizeRole from "../middleware/authorizeRole.js";
 
 import {
   getMyProfile,
+  updateMyProfile,
   getAllUsers,
   updateUserRole,
   updateUserStatus,
@@ -12,8 +13,11 @@ import {
 
 const router = express.Router();
 
-// Get logged-in user's profile
+// Logged-in user: Get own profile
 router.get("/me", verifyToken, getMyProfile);
+
+// Logged-in user: Update own profile
+router.patch("/me", verifyToken, updateMyProfile);
 
 // Admin: Get all users
 router.get("/admin", verifyToken, authorizeRole("admin"), getAllUsers);

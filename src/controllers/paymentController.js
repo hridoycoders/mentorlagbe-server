@@ -75,8 +75,8 @@ const createCheckoutSession = async (req, res) => {
         amount: String(amount / 100),
       },
 
-      success_url: `${process.env.CLIENT_URL}/dashboard/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CLIENT_URL}/dashboard/payment-cancel`,
+      success_url: `${process.env.CLIENT_URL}/payment/success`,
+      cancel_url: `${process.env.CLIENT_URL}/payment/cancel`,
     });
 
     return res.status(200).json({
