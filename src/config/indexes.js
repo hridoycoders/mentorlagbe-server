@@ -22,6 +22,20 @@ const createIndexes = async () => {
     },
   );
 
+  await db.collection("tuitions").createIndex(
+    { seedKey: 1 },
+    {
+      unique: true,
+      name: "unique_tuition_seed_key",
+      partialFilterExpression: {
+        $and: [
+          { seedKey: { $type: "string" } },
+          { seedKey: { $gt: "" } },
+        ],
+      },
+    },
+  );
+
   console.log("MongoDB Indexes Created Successfully!");
 };
 
