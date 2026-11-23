@@ -1,14 +1,69 @@
 import { ObjectId } from "mongodb";
 import { getDB } from "../config/db.js";
 
+const ALLOWED_SCHEDULES = ["Morning", "Afternoon", "Evening", "Flexible"];
+
+const isValidPhone = (value) => {
+  if (typeof value !== "string") return false;
+
+  const trimmed = value.trim();
+
+  if (!/^\+?[\d\s()-]+$/.test(trimmed)) return false;
+
+  const digits = trimmed.replace(/\D/g, "");
+
+  return digits.length >= 7 && digits.length <= 15;
+};
+
 const createApplication = async (req, res) => {
   try {
-    const { tuitionId, message = "" } = req.body;
+    const {
+      tuitionId,
+      message = "",
+      studentPhone,
+      preferredSchedule,
+      studentNote,
+    } = req.body;
 
     if (!tuitionId || !ObjectId.isValid(tuitionId)) {
       return res.status(400).json({
         success: false,
         message: "A valid tuition ID is required.",
+      });
+    }
+
+    if (!isValidPhone(studentPhone)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "A valid student phone number is required (7-15 digits, international format allowed).",
+      });
+    }
+
+    if (
+      typeof preferredSchedule !== "string" ||
+      !ALLOWED_SCHEDULES.includes(preferredSchedule.trim())
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Preferred schedule must be Morning, Afternoon, Evening, or Flexible.",
+      });
+    }
+
+    if (typeof studentNote !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "A learning note is required.",
+      });
+    }
+
+    const trimmedNote = studentNote.trim();
+
+    if (trimmedNote.length < 10 || trimmedNote.length > 1000) {
+      return res.status(400).json({
+        success: false,
+        message: "Learning note must be between 10 and 1000 characters.",
       });
     }
 
@@ -58,6 +113,10 @@ const createApplication = async (req, res) => {
       studentId: new ObjectId(req.user.id),
       studentName: req.user.name,
       studentEmail: req.user.email,
+
+      studentPhone: studentPhone.trim(),
+      preferredSchedule: preferredSchedule.trim(),
+      studentNote: trimmedNote,
 
       message: message.trim(),
       status: "pending",
