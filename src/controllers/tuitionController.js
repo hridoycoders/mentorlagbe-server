@@ -206,6 +206,13 @@ const searchPublicTuitions = async (req, res) => {
 
     const { search, subject, location, classLevel, mode } = req.query;
 
+    // Pagination parameters (safe defaults + clamping)
+    const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(
+      50,
+      Math.max(1, Number.parseInt(req.query.limit, 10) || 12),
+    );
+
     // Only approved and active tuitions are publicly visible
     const filter = {
       status: "approved",
@@ -265,16 +272,26 @@ const searchPublicTuitions = async (req, res) => {
       };
     }
 
-    const tuitions = await db
-      .collection("tuitions")
+    const tuitionsCollection = db.collection("tuitions");
+
+    const total = await tuitionsCollection.countDocuments(filter);
+    const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
+
+    // Clamp out-of-range pages to the last available page (safe handling).
+    const safePage = totalPages === 0 ? 1 : Math.min(page, totalPages);
+    const safeSkip = (safePage - 1) * limit;
+
+    const tuitions = await tuitionsCollection
       .find(filter)
       .sort({ createdAt: -1 })
+      .skip(safeSkip)
+      .limit(limit)
       .toArray();
 
     return res.status(200).json({
       success: true,
       message: "Tuition search completed successfully.",
-      total: tuitions.length,
+      total,
       filters: {
         search: search || "",
         subject: subject || "",
@@ -283,6 +300,14 @@ const searchPublicTuitions = async (req, res) => {
         mode: mode || "",
       },
       data: tuitions,
+      pagination: {
+        page: safePage,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: safePage < totalPages,
+        hasPrevPage: safePage > 1,
+      },
     });
   } catch (error) {
     console.error("Search Tuitions Error:", error.message);
