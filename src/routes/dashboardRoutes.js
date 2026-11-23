@@ -1,7 +1,8 @@
 import express from "express";
 
-import verifyToken from "../middleware/verifyToken.js";
-import authorizeRole from "../middleware/authorizeRole.js";
+import verifyStudent from "../middleware/verifyStudent.js";
+import verifyTutor from "../middleware/verifyTutor.js";
+import verifyAdmin from "../middleware/verifyAdmin.js";
 
 import {
   getStudentStats,
@@ -15,22 +16,20 @@ const router = express.Router();
 // Student Dashboard Statistics
 router.get(
   "/stats/student",
-  verifyToken,
-  authorizeRole("student"),
+  verifyStudent,
   getStudentStats,
 );
 
 // Tutor Dashboard Statistics
-router.get("/stats/tutor", verifyToken, authorizeRole("tutor"), getTutorStats);
+router.get("/stats/tutor", verifyTutor, getTutorStats);
 
 // Admin Dashboard Statistics
-router.get("/stats/admin", verifyToken, authorizeRole("admin"), getAdminStats);
+router.get("/stats/admin", verifyAdmin, getAdminStats);
 
 // Admin: Payment Transaction History
 router.get(
   "/transactions",
-  verifyToken,
-  authorizeRole("admin"),
+  verifyAdmin,
   getAllTransactions,
 );
 

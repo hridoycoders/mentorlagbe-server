@@ -12,42 +12,41 @@ import {
   updateTuitionStatus,
 } from "../controllers/tuitionController.js";
 
-import verifyToken from "../middleware/verifyToken.js";
-import authorizeRole from "../middleware/authorizeRole.js";
+import verifyAdmin from "../middleware/verifyAdmin.js";
+import verifyTutor from "../middleware/verifyTutor.js";
 
 const router = express.Router();
 
-// Search and filter public tuitions
+// Public: Search and filter tuition listings
 router.get("/search", searchPublicTuitions);
 
-// Admin: Get all tuitions
-router.get("/admin/all", verifyToken, authorizeRole("admin"), getAllTuitions);
+// Admin: Get all tuition listings
+router.get("/admin/all", verifyAdmin, getAllTuitions);
 
-// Admin: Approve or reject a tuition
+// Admin: Approve or reject a tuition listing
 router.patch(
   "/admin/:id/status",
-  verifyToken,
-  authorizeRole("admin"),
+  verifyAdmin,
   updateTuitionStatus,
 );
 
-// Tutor: Get all of their own tuitions
+// Tutor: Get own tuition listings
 // Keep this route before /:id
-router.get("/my", verifyToken, authorizeRole("tutor"), getTutorTuitions);
+router.get("/my", verifyTutor, getTutorTuitions);
 
-// Get all approved and active public tuitions
+// Public: Get approved and active tuition listings
 router.get("/", getPublicTuitions);
 
-// Create a new tuition (Tutor only)
-router.post("/", verifyToken, authorizeRole("tutor"), createTuition);
+// Tutor: Create a tuition listing
+router.post("/", verifyTutor, createTuition);
 
-// Update tutor's own tuition
-router.patch("/:id", verifyToken, authorizeRole("tutor"), updateTutorTuition);
+// Tutor: Update own tuition listing
+router.patch("/:id", verifyTutor, updateTutorTuition);
 
-// Delete tutor's own tuition
-router.delete("/:id", verifyToken, authorizeRole("tutor"), deleteTutorTuition);
+// Tutor: Delete own tuition listing
+router.delete("/:id", verifyTutor, deleteTutorTuition);
 
-// Get single tuition details
+// Public: Get a single tuition listing
 router.get("/:id", getPublicTuitionById);
 
 export default router;

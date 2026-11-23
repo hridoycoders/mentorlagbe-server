@@ -9,42 +9,39 @@ import {
   deleteApplication,
 } from "../controllers/applicationController.js";
 
-import verifyToken from "../middleware/verifyToken.js";
-import authorizeRole from "../middleware/authorizeRole.js";
+import verifyStudent from "../middleware/verifyStudent.js";
+import verifyTutor from "../middleware/verifyTutor.js";
 
 const router = express.Router();
 
 // Student: Get own applications
 router.get(
   "/student",
-  verifyToken,
-  authorizeRole("student"),
+  verifyStudent,
   getStudentApplications,
 );
 
 // Tutor: Get all applications for own tuitions
-router.get("/tutor", verifyToken, authorizeRole("tutor"), getTutorApplications);
+router.get("/tutor", verifyTutor, getTutorApplications);
 
 // Tutor: Get a specific application by ID
 router.get(
   "/tutor/:id",
-  verifyToken,
-  authorizeRole("tutor"),
+  verifyTutor,
   getTutorApplicationById,
 );
 
 // Tutor: Accept or reject an application
 router.patch(
   "/tutor/:id/status",
-  verifyToken,
-  authorizeRole("tutor"),
+  verifyTutor,
   updateApplicationStatus,
 );
 
 // Student: Apply for a tuition
-router.post("/", verifyToken, authorizeRole("student"), createApplication);
+router.post("/", verifyStudent, createApplication);
 
 // Student: Cancel a pending application
-router.delete("/:id", verifyToken, authorizeRole("student"), deleteApplication);
+router.delete("/:id", verifyStudent, deleteApplication);
 
 export default router;

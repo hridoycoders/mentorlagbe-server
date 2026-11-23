@@ -1,7 +1,7 @@
 import express from "express";
 
 import verifyToken from "../middleware/verifyToken.js";
-import authorizeRole from "../middleware/authorizeRole.js";
+import verifyAdmin from "../middleware/verifyAdmin.js";
 
 import {
   getMyProfile,
@@ -20,21 +20,19 @@ router.get("/me", verifyToken, getMyProfile);
 router.patch("/me", verifyToken, updateMyProfile);
 
 // Admin: Get all users
-router.get("/admin", verifyToken, authorizeRole("admin"), getAllUsers);
+router.get("/admin", verifyAdmin, getAllUsers);
 
 // Admin: Update user role
 router.patch(
   "/admin/:id/role",
-  verifyToken,
-  authorizeRole("admin"),
+  verifyAdmin,
   updateUserRole,
 );
 
 // Admin: Update user account status
 router.patch(
   "/admin/:id/status",
-  verifyToken,
-  authorizeRole("admin"),
+  verifyAdmin,
   updateUserStatus,
 );
 
